@@ -3,18 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Safety & Payroll Portal</title>
+    <title>Employee Portal - Payroll & Attendance</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- HOME / MEMBER LOGIN SCREEN -->
-    <div id="homeScreen" class="auth-container">
-        <button class="admin-top-btn" onclick="showAdminLogin()">🔑 Admin Login</button>
+    <!-- TOP LEFT ADMIN PORTAL LINK -->
+    <a href="admin.html" class="admin-top-btn">🔑 Go to Admin Portal</a>
 
+    <!-- MEMBER LOGIN SCREEN -->
+    <div id="homeScreen" class="auth-container">
         <div class="auth-card">
             <h2>Member Portal</h2>
-            <p class="subtitle">Please enter your Safety Card Number to access your portal.</p>
+            <p class="subtitle">Please enter your Safety Card Number to view your records.</p>
 
             <form id="memberLoginForm" onsubmit="handleSafetyCardLogin(event)">
                 <div class="form-group">
@@ -27,46 +28,23 @@
         </div>
     </div>
 
-    <!-- ADMIN LOGIN SCREEN -->
-    <div id="adminLoginScreen" class="auth-container hidden">
-        <button class="admin-top-btn" onclick="showMemberLogin()">◀ Back to Member Login</button>
-
-        <div class="auth-card">
-            <h2>Admin Portal</h2>
-            <p class="subtitle">Authorized Personnel Only</p>
-
-            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
-                <div class="form-group">
-                    <label>Admin ID</label>
-                    <input type="text" id="adminUser" required value="admin">
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="password" id="adminPass" required value="admin123">
-                </div>
-                <button type="submit" class="btn btn-admin">Login as Admin</button>
-            </form>
-            <p id="adminLoginError" class="error-msg"></p>
-        </div>
-    </div>
-
-    <!-- MAIN DASHBOARD -->
+    <!-- MEMBER DASHBOARD -->
     <div id="dashboardScreen" class="hidden">
         <header class="navbar">
             <div>
-                <h1 id="portalHeaderTitle">Payroll & Attendance Portal</h1>
+                <h1 id="portalHeaderTitle">Employee Portal</h1>
                 <p id="userWelcome"></p>
             </div>
-            <button class="btn-sm btn-danger" onclick="logout()">Logout</button>
+            <button class="btn-sm btn-danger" onclick="logout()" type="button">Logout</button>
         </header>
 
         <div class="container">
-            <!-- CALENDAR & ATTENDANCE -->
+            <!-- CALENDAR -->
             <div class="card">
                 <div class="calendar-header">
-                    <button class="btn-sm" onclick="changeMonth(-1)">◀ Prev</button>
+                    <button class="btn-sm" onclick="changeMonth(-1)" type="button">◀ Prev</button>
                     <h2 id="monthYearTitle"></h2>
-                    <button class="btn-sm" onclick="changeMonth(1)">Next ▶</button>
+                    <button class="btn-sm" onclick="changeMonth(1)" type="button">Next ▶</button>
                 </div>
 
                 <div class="calendar-grid" id="calendarGrid"></div>
@@ -76,74 +54,13 @@
                     <span class="legend-item holiday-bg">■ Holiday</span>
                     <span class="legend-item weekend-bg">■ Weekend</span>
                 </div>
-
-                <!-- ADMIN ONLY: HOLIDAY MANAGEMENT -->
-                <div id="adminHolidaySection" class="admin-panel hidden">
-                    <h3>⚙️ Admin: Holiday Management</h3>
-                    <div class="form-inline">
-                        <input type="date" id="customHolidayDate">
-                        <input type="text" id="customHolidayTitle" placeholder="Holiday Description">
-                        <button class="btn-sm btn-admin" onclick="addCustomHoliday()">Add Holiday</button>
-                    </div>
-                </div>
             </div>
 
-            <!-- PAYROLL & MEMBER MANAGEMENT -->
+            <!-- PAYROLL DETAILS -->
             <div class="card">
                 <h2>Earnings & Statutory Deductions</h2>
 
-                <!-- ADMIN ONLY: DETAILED MEMBER MANAGEMENT -->
-                <div id="adminMemberSection" class="admin-panel hidden">
-                    <h3>👥 Admin: Add New Member</h3>
-                    <form onsubmit="handleAddMember(event)">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Safety Card Number *</label>
-                                <input type="text" id="newMemCardNo" required placeholder="e.g. SC-1003">
-                            </div>
-                            <div class="form-group">
-                                <label>Member Full Name *</label>
-                                <input type="text" id="newMemName" required placeholder="e.g. Rahul Sharma">
-                            </div>
-                            <div class="form-group">
-                                <label>Phone Number *</label>
-                                <input type="tel" id="newMemPhone" required placeholder="e.g. 9876543210">
-                            </div>
-                            <div class="form-group">
-                                <label>Gatepass Number *</label>
-                                <input type="text" id="newMemGatepass" required placeholder="e.g. GP-5541">
-                            </div>
-                            <div class="form-group">
-                                <label>Basic Salary (₹) *</label>
-                                <input type="number" id="newMemBasic" required value="18000">
-                            </div>
-                            <div class="form-group">
-                                <label>Allowances (₹) *</label>
-                                <input type="number" id="newMemAllowance" required value="4000">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn-sm btn-admin" style="width: 100%; margin-top: 5px;">Register Member</button>
-                    </form>
-
-                    <h4 style="margin-top: 15px;">Registered Members List</h4>
-                    <div class="table-scroll">
-                        <table class="member-table">
-                            <thead>
-                                <tr>
-                                    <th>Safety Card</th>
-                                    <th>Name</th>
-                                    <th>Phone</th>
-                                    <th>Gatepass</th>
-                                    <th>Basic</th>
-                                </tr>
-                            </thead>
-                            <tbody id="memberTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- MEMBER DETAILS DISPLAY -->
-                <div id="memberDetailCard" class="member-info-box hidden">
+                <div id="memberDetailCard" class="member-info-box">
                     <p><strong>Member Name:</strong> <span id="infoMemName"></span></p>
                     <p><strong>Phone:</strong> <span id="infoMemPhone"></span></p>
                     <p><strong>Gatepass No:</strong> <span id="infoMemGatepass"></span></p>
