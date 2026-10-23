@@ -1,1 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payroll & Attendance Management System</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background-color: #f0f2f5; color: #333; }
+        .header { text-align: center; margin-bottom: 25px; }
+        .container { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; max-width: 1300px; margin: 0 auto; }
+        .card { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; border-bottom: 2px solid #eef2f5; padding-bottom: 10px; color: #1e293b; font-size: 18px; }
+        
+        /* Calendar Styles */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+        .day-header { font-weight: bold; padding: 8px; background: #e2e8f0; border-radius: 4px; font-size: 13px; }
+        .day-cell { padding: 12px 4px; border-radius: 6px; font-size: 13px; background: #f8fafc; border: 1px solid #e2e8f0; position: relative; }
+        .day-cell.present { background: #dcfce7; color: #166534; font-weight: 600; }
+        .day-cell.holiday { background: #fee2e2; color: #991b1b; font-weight: 600; }
+        .day-cell.weekend { background: #f1f5f9; color: #64748b; }
+        .day-cell .holiday-label { font-size: 9px; display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; margin-top: 3px; }
+
+        /* Form & Payroll */
+        .form-group { margin-bottom: 12px; }
+        label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 600; color: #475569; }
+        input { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+        .results-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
+        .results-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        .results-table tr.total { font-weight: bold; background: #f8fafc; }
+        
+        /* Admin Controls */
+        .admin-box { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .btn { background: #2563eb; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn:hover { background: #1d4ed8; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .holiday-list { list-style: none; padding: 0; margin-top: 10px; max-height: 120px; overflow-y: auto; font-size: 13px; }
+        .holiday-list li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1 style="color: #0f172a; margin-bottom: 5px;">Payroll & Attendance System</h1>
+    <p style="color: #64748b; margin-top: 0;">Automated Attendance & Statutory Calculations (PF / ESI)</p>
+</div>
+
+<div class="container">
+    <!-- CALENDAR & ATTENDANCE -->
+    <div class="card">
+        <div class="calendar-header">
+            <button class="btn" onclick="changeMonth(-1)">◀ Prev</button>
+            <h2 id="monthYearTitle" style="border: none; margin: 0;"></h2>
+            <button class="btn" onclick="changeMonth(1)">Next ▶</button>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+
+        <div style="margin-top: 15px; font-size: 12px; display: flex; gap: 15px;">
+            <span style="color: #166534; font-weight: bold;">■ Auto-Present (Weekday)</span>
+            <span style="color: #991b1b; font-weight: bold;">■ Holiday (Google API / Admin)</span>
+            <span style="color: #64748b; font-weight: bold;">■ Weekend</span>
+        </div>
+
+        <!-- ADMIN CONTROLS SECTION -->
+        <div class="admin-box">
+            <h3>⚙️ Admin Panel: Custom Holiday Management</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="date" id="customHolidayDate">
+                <input type="text" id="customHolidayTitle" placeholder="Holiday Title (e.g. Company Day)">
+                <button class="btn" onclick="addCustomHoliday()">Add Holiday</button>
+            </div>
+            <label>Current Month Holidays:</label>
+            <ul class="holiday-list" id="holidayListContainer"></ul>
+        </div>
+    </div>
+
+    <!-- SALARY & DEDUCTION CALCULATOR -->
+    <div class="card">
+        <h2>Earnings & Deductions Summary</h2>
+
+        <div class="admin-box" style="margin-top: 0; margin-bottom: 15px;">
+            <label>⚙️ Admin: Employee Compensation Setup</label>
+            <div class="form-group" style="margin-top: 8px;">
+                <label>Basic Salary (₹):</label>
+                <input type="number" id="basicSalary" value="18000" oninput="calculatePayroll()">
+            </div>
+            <div class="form-group">
+                <label>Allowances (HRA / Special) (₹):</label>
+                <input type="number" id="allowances" value="4000" oninput="calculatePayroll()">
+            </div>
+        </div>
+
+        <table class="results-table">
+            <tr>
+                <td>Days in Month</td>
+                <td id="totalDays">0</td>
+            </tr>
+            <tr>
+                <td>Working Days (Auto-Present)</td>
+                <td id="presentDays">0</td>
+            </tr>
+            <tr>
+                <td>Paid Holidays</td>
+                <td id="holidayCount">0</td>
+            </tr>
+            <tr>
+                <td><strong>Gross Salary</strong></td>
+                <td id="grossSalary">₹0</td>
+            </tr>
+            <tr>
+                <td>PF Deduction (12% of Basic, Max ₹1,800)</td>
+                <td id="pfDeduction" style="color: #dc2626;">-₹0</td>
+            </tr>
+            <tr>
+                <td>ESI Deduction (0.75% if Gross ≤ ₹21,000)</td>
+                <td id="esiDeduction" style="color: #dc2626;">-₹0</td>
+            </tr>
+            <tr class="total">
+                <td>Net Take-Home Pay</td>
+                <td id="netSalary" style="color: #16a34a; font-size: 16px;">₹0</td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<script>
+    // Config: Replace API key with your own Google API Key
+    const GOOGLE_API_KEY = "YOUR_GOOGLE_CALENDAR_API_KEY";
+    const HOLIDAY_CALENDAR_ID = "en.indian.official#holiday@group.v.calendar.google.com";
+
+    let currentDate = new Date(); // Defaults to current date
+    let apiHolidays = {}; // Stores fetched Google Calendar holidays: { "YYYY-MM-DD": "Holiday Name" }
+    let customHolidays = {}; // Admin custom holidays: { "YYYY-MM-DD": "Custom Title" }
+
+    async function fetchGoogleHolidays(year) {
+        if (GOOGLE_API_KEY === "YOUR_GOOGLE_CALENDAR_API_KEY") {
+            // Fallback mock holidays if API key isn't provided
+            apiHolidays = {
+                [`${year}-01-26`]: "Republic Day",
+                [`${year}-08-15`]: "Independence Day",
+                [`${year}-10-02`]: "Gandhi Jayanti",
+                [`${year}-12-25`]: "Christmas"
+            };
+            renderCalendar();
+            return;
+        }
+
+        const timeMin = new Date(year, 0, 1).toISOString();
+        const timeMax = new Date(year, 11, 31).toISOString();
+        const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(HOLIDAY_CALENDAR_ID)}/events?key=${GOOGLE_API_KEY}&timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true`;
+
+        try {
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.items) {
+                apiHolidays = {};
+                data.items.forEach(event => {
+                    if (event.start && event.start.date) {
+                        apiHolidays[event.start.date] = event.summary;
+                    }
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load Google Calendar API holidays:", err);
+        }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const grid = document.getElementById("calendarGrid");
+        grid.innerHTML = "";
+
+        const monthNames = ["January", "February", "March", "April", "May", "June", 
+                            "July", "August", "September", "October", "November", "December"];
+        document.getElementById("monthYearTitle").innerText = `${monthNames[month]} ${year}`;
+
+        // Header days
+        ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(d => {
+            const h = document.createElement("div");
+            h.className = "day-header";
+            h.innerText = d;
+            grid.appendChild(h);
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        // Empty padding cells
+        for (let i = 0; i < firstDay; i++) {
+            grid.appendChild(document.createElement("div"));
+        }
+
+        let presentCount = 0;
+        let holidayCount = 0;
+        const currentMonthHolidays = [];
+
+        // Combine API & Admin custom holidays
+        const allHolidays = { ...apiHolidays, ...customHolidays };
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayOfWeek = new Date(year, month, day).getDay();
+
+            const cell = document.createElement("div");
+            cell.className = "day-cell";
+            cell.innerHTML = `<span>${day}</span>`;
+
+            if (allHolidays[dateStr]) {
+                cell.classList.add("holiday");
+                const label = allHolidays[dateStr];
+                cell.innerHTML += `<span class="holiday-label" title="${label}">${label}</span>`;
+                holidayCount++;
+                currentMonthHolidays.push({ date: dateStr, title: label });
+            } else if (dayOfWeek === 0 || dayOfWeek === 6) {
+                cell.classList.add("weekend");
+            } else {
+                // Auto Present on Weekdays
+                cell.classList.add("present");
+                presentCount++;
+            }
+
+            grid.appendChild(cell);
+        }
+
+        document.getElementById("totalDays").innerText = totalDays;
+        document.getElementById("presentDays").innerText = presentCount;
+        document.getElementById("holidayCount").innerText = holidayCount;
+
+        updateAdminHolidayList(currentMonthHolidays);
+        calculatePayroll();
+    }
+
+    function calculatePayroll() {
+        const basic = parseFloat(document.getElementById("basicSalary").value) || 0;
+        const allowance = parseFloat(document.getElementById("allowances").value) || 0;
+        const gross = basic + allowance;
+
+        // PF Rules: 12% on basic capped at 15,000 max basic (Max deduction = 1,800)
+        const pfBasic = Math.min(basic, 15000);
+        const pf = Math.round(pfBasic * 0.12);
+
+        // ESI Rules: 0.75% of Gross if Gross <= ₹21,000
+        let esi = 0;
+        if (gross <= 21000) {
+            esi = Math.ceil(gross * 0.0075);
+        }
+
+        const net = gross - (pf + esi);
+
+        document.getElementById("grossSalary").innerText = `₹${gross.toLocaleString()}`;
+        document.getElementById("pfDeduction").innerText = `-₹${pf.toLocaleString()}`;
+        document.getElementById("esiDeduction").innerText = `-₹${esi.toLocaleString()}`;
+        document.getElementById("netSalary").innerText = `₹${net.toLocaleString()}`;
+    }
+
+    function changeMonth(delta) {
+        const prevYear = currentDate.getFullYear();
+        currentDate.setMonth(currentDate.getMonth() + delta);
+        if (currentDate.getFullYear() !== prevYear) {
+            fetchGoogleHolidays(currentDate.getFullYear());
+        } else {
+            renderCalendar();
+        }
+    }
+
+    function addCustomHoliday() {
+        const date = document.getElementById("customHolidayDate").value;
+        const title = document.getElementById("customHolidayTitle").value;
+
+        if (date && title) {
+            customHolidays[date] = title;
+            document.getElementById("customHolidayDate").value = "";
+            document.getElementById("customHolidayTitle").value = "";
+            renderCalendar();
+        } else {
+            alert("Please select a date and enter a holiday title.");
+        }
+    }
+
+    function removeCustomHoliday(date) {
+        delete customHolidays[date];
+        delete apiHolidays[date];
+        renderCalendar();
+    }
+
+    function updateAdminHolidayList(holidays) {
+        const listContainer = document.getElementById("holidayListContainer");
+        listContainer.innerHTML = "";
+        
+        if (holidays.length === 0) {
+            listContainer.innerHTML = "<li>No holidays in this month.</li>";
+            return;
+        }
+
+        holidays.forEach(h => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                <span><strong>${h.date}</strong>: ${h.title}</span>
+                <button class="btn btn-danger" style="padding: 2px 6px; font-size: 10px;" onclick="removeCustomHoliday('${h.date}')">Remove</button>
+            `;
+            listContainer.appendChild(li);
+        });
+    }
+
+    // Initial Load
+    fetchGoogleHolidays(currentDate.getFullYear());
+</script>
+
+</body>
+</html>
 
