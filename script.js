@@ -2,78 +2,79 @@
 const GOOGLE_API_KEY = "YOUR_GOOGLE_CALENDAR_API_KEY";
 const HOLIDAY_CALENDAR_ID = "en.indian.official#holiday@group.v.calendar.google.com";
 
-// Default Storage Setup
+// Initialize LocalStorage with default members if empty
 if (!localStorage.getItem("members")) {
-    // Initial sample member
     const initialMembers = [
-        { username: "john", code: "EMP101", basic: 20000, allowance: 5000 }
+        { name: "John Doe", cardNo: "SC-1001", basic: 20000, allowance: 5000 },
+        { name: "Jane Smith", cardNo: "SC-1002", basic: 18000, allowance: 4000 }
     ];
     localStorage.setItem("members", JSON.stringify(initialMembers));
 }
 
 let currentDate = new Date();
-let currentUser = null; // Stores logged-in user details
+let currentUser = null;
 let apiHolidays = {};
 let customHolidays = {};
 
-// AUTHENTICATION TAB SWITCHING
-function switchTab(type) {
-    document.getElementById("loginError").innerText = "";
-    if (type === 'member') {
-        document.getElementById("memberTabBtn").classList.add("active");
-        document.getElementById("adminTabBtn").classList.remove("active");
-        document.getElementById("memberLoginForm").classList.remove("hidden");
-        document.getElementById("adminLoginForm").classList.add("hidden");
-    } else {
-        document.getElementById("adminTabBtn").classList.add("active");
-        document.getElementById("memberTabBtn").classList.remove("active");
-        document.getElementById("adminLoginForm").classList.remove("hidden");
-        document.getElementById("memberLoginForm").classList.add("hidden");
-    }
+// NAVIGATION BETWEEN LOGIN SCREENS
+function showAdminLogin() {
+    document.getElementById("homeScreen").classList.add("hidden");
+    document.getElementById("adminLoginScreen").classList.remove("hidden");
+    document.getElementById("memberLoginError").innerText = "";
 }
 
-// MEMBER LOGIN
-function handleMemberLogin(e) {
+function showMemberLogin() {
+    document.getElementById("adminLoginScreen").classList.add("hidden");
+    document.getElementById("homeScreen").classList.remove("hidden");
+    document.getElementById("adminLoginError").innerText = "";
+}
+
+// MEMBER LOGIN USING SAFETY CARD NUMBER
+function handleSafetyCardLogin(e) {
     e.preventDefault();
-    const username = document.getElementById("memberUsername").value.trim();
-    const code = document.getElementById("memberCode").value.trim();
-
+    const cardInput = document.getElementById("safetyCardNumber").value.trim();
     const members = JSON.parse(localStorage.getItem("members"));
-    const found = members.find(m => m.username.toLowerCase() === username.toLowerCase() && m.code === code);
 
-    if (found) {
-        currentUser = { ...found, role: "member" };
+    const foundMember = members.find(m => m.cardNo.toLowerCase() === cardInput.toLowerCase());
+
+    if (foundMember) {
+        currentUser = { ...foundMember, role: "member" };
         startDashboard();
     } else {
-        document.getElementById("loginError").innerText = "Invalid Username or Access Code!";
+        document.getElementById("memberLoginError").innerText = "Invalid Safety Card Number. Please check and try again.";
     }
 }
 
-// ADMIN LOGIN
+// ADMIN LOGIN (DEFAULT CREDENTIALS)
 function handleAdminLogin(e) {
     e.preventDefault();
-    const user = document.getElementById("adminUser").value;
-    const pass = document.getElementById("adminPass").value;
+    const user = document.getElementById("adminUser").value.trim();
+    const pass = document.getElementById("adminPass").value.trim();
 
-    // Default Credentials
+    // Default Admin Credentials
     if (user === "admin" && pass === "admin123") {
-        currentUser = { username: "Admin", role: "admin" };
+        currentUser = { name: "Administrator", role: "admin" };
         startDashboard();
     } else {
-        document.getElementById("loginError").innerText = "Invalid Admin Credentials!";
+        document.getElementById("adminLoginError").innerText = "Invalid Admin ID or Password!";
     }
 }
 
+// DASHBOARD INITIALIZATION
 function startDashboard() {
-    document.getElementById("loginScreen").classList.add("hidden");
+    document.getElementById("homeScreen").classList.add("hidden");
+    document.getElementById("adminLoginScreen").classList.add("hidden");
     document.getElementById("dashboardScreen").classList.remove("hidden");
-    document.getElementById("userWelcome").innerText = `Logged in as: ${currentUser.username} (${currentUser.role.toUpperCase()})`;
 
     if (currentUser.role === "admin") {
+        document.getElementById("portalHeaderTitle").innerText = "Admin Portal & Control Center";
+        document.getElementById("userWelcome").innerText = `Logged in as: Admin`;
         document.getElementById("adminHolidaySection").classList.remove("hidden");
         document.getElementById("adminMemberSection").classList.remove("hidden");
         renderMemberList();
     } else {
+        document.getElementById("portalHeaderTitle").innerText = "Employee Portal";
+        document.getElementById("userWelcome").innerText = `Welcome, ${currentUser.name} (Safety Card: ${currentUser.cardNo})`;
         document.getElementById("adminHolidaySection").classList.add("hidden");
         document.getElementById("adminMemberSection").classList.add("hidden");
     }
@@ -83,11 +84,12 @@ function startDashboard() {
 
 function logout() {
     currentUser = null;
+    document.getElementById("safetyCardNumber").value = "";
     document.getElementById("dashboardScreen").classList.add("hidden");
-    document.getElementById("loginScreen").classList.remove("hidden");
+    showMemberLogin();
 }
 
-// GOOGLE CALENDAR API INTEGRATION
+// FETCH GOOGLE CALENDAR HOLIDAYS
 async function fetchGoogleHolidays(year) {
     if (GOOGLE_API_KEY === "YOUR_GOOGLE_CALENDAR_API_KEY") {
         apiHolidays = {
@@ -116,12 +118,12 @@ async function fetchGoogleHolidays(year) {
             });
         }
     } catch (err) {
-        console.error("Calendar API fetch failed:", err);
+        console.error("Failed to load Google Calendar events:", err);
     }
     renderCalendar();
 }
 
-// CALENDAR RENDER & AUTO-ATTENDANCE
+// RENDER CALENDAR & CALCULATION
 function renderCalendar() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -180,7 +182,7 @@ function renderCalendar() {
     calculatePayroll();
 }
 
-// SALARY, PF & ESI CALCULATION
+// SALARY, PF & ESI CALCULATIONS
 function calculatePayroll() {
     let basic = 0;
     let allowance = 0;
@@ -189,18 +191,17 @@ function calculatePayroll() {
         basic = parseFloat(currentUser.basic) || 0;
         allowance = parseFloat(currentUser.allowance) || 0;
     } else {
-        // Admin default view sample
         basic = 20000;
         allowance = 5000;
     }
 
     const gross = basic + allowance;
 
-    // PF Calculation: 12% on Basic capped at ₹15,000 (Max ₹1,800)
+    // PF Formula: 12% on basic capped at 15000 (Max ₹1,800)
     const pfBasic = Math.min(basic, 15000);
     const pf = Math.round(pfBasic * 0.12);
 
-    // ESI Calculation: 0.75% of Gross if Gross <= ₹21,000
+    // ESI Formula: 0.75% of Gross if Gross <= ₹21,000
     let esi = 0;
     if (gross <= 21000) {
         esi = Math.ceil(gross * 0.0075);
@@ -216,21 +217,28 @@ function calculatePayroll() {
     document.getElementById("netSalary").innerText = `₹${net.toLocaleString()}`;
 }
 
-// ADMIN MEMBER MANAGEMENT
+// ADMIN MEMBER REGISTRATION
 function handleAddMember(e) {
     e.preventDefault();
-    const username = document.getElementById("newMemUser").value.trim();
-    const code = document.getElementById("newMemCode").value.trim();
+    const name = document.getElementById("newMemName").value.trim();
+    const cardNo = document.getElementById("newMemCardNo").value.trim();
     const basic = parseFloat(document.getElementById("newMemBasic").value) || 0;
     const allowance = parseFloat(document.getElementById("newMemAllowance").value) || 0;
 
     const members = JSON.parse(localStorage.getItem("members"));
-    members.push({ username, code, basic, allowance });
+
+    // Check duplicate
+    if (members.some(m => m.cardNo.toLowerCase() === cardNo.toLowerCase())) {
+        alert("This Safety Card Number is already assigned!");
+        return;
+    }
+
+    members.push({ name, cardNo, basic, allowance });
     localStorage.setItem("members", JSON.stringify(members));
 
-    alert(`Member ${username} created successfully! Access Code: ${code}`);
-    document.getElementById("newMemUser").value = "";
-    document.getElementById("newMemCode").value = "";
+    alert(`Member "${name}" added successfully!\nSafety Card: ${cardNo}`);
+    document.getElementById("newMemName").value = "";
+    document.getElementById("newMemCardNo").value = "";
     renderMemberList();
 }
 
@@ -240,7 +248,7 @@ function renderMemberList() {
     list.innerHTML = "";
     members.forEach(m => {
         const li = document.createElement("li");
-        li.innerHTML = `<span><strong>${m.username}</strong> (Code: ${m.code})</span> <span>Basic: ₹${m.basic}</span>`;
+        li.innerHTML = `<span><strong>${m.name}</strong> (${m.cardNo})</span> <span>Basic: ₹${m.basic}</span>`;
         list.appendChild(li);
     });
 }
@@ -258,4 +266,3 @@ function addCustomHoliday() {
         renderCalendar();
     }
 }
-
