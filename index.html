@@ -3,46 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Payroll & Attendance Management</title>
+    <title>Employee Safety & Payroll Portal</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- LOGIN CONTAINER -->
-    <div id="loginScreen" class="auth-container">
+    <!-- HOME / MEMBER LOGIN SCREEN (LOADS FIRST) -->
+    <div id="homeScreen" class="auth-container">
+        <!-- Top Left Admin Login Button -->
+        <button class="admin-top-btn" onclick="showAdminLogin()">🔑 Admin Login</button>
+
         <div class="auth-card">
-            <h2>Welcome Back</h2>
-            <div class="tab-buttons">
-                <button id="memberTabBtn" class="active" onclick="switchTab('member')">Member Login</button>
-                <button id="adminTabBtn" onclick="switchTab('admin')">Admin Login</button>
-            </div>
+            <h2>Member Portal</h2>
+            <p class="subtitle">Please enter your Safety Card Number to access your attendance and payroll records.</p>
 
-            <!-- MEMBER LOGIN FORM -->
-            <form id="memberLoginForm" onsubmit="handleMemberLogin(event)">
+            <form id="memberLoginForm" onsubmit="handleSafetyCardLogin(event)">
                 <div class="form-group">
-                    <label>Username / ID</label>
-                    <input type="text" id="memberUsername" required placeholder="Enter member username">
+                    <label for="safetyCardNumber">Safety Card Number</label>
+                    <input type="password" id="safetyCardNumber" placeholder="e.g. SC-1001" required autocomplete="off">
                 </div>
-                <div class="form-group">
-                    <label>Access Code</label>
-                    <input type="password" id="memberCode" required placeholder="Enter specific access code">
-                </div>
-                <button type="submit" class="btn">Login as Member</button>
+                <button type="submit" class="btn btn-primary">Verify & Login</button>
             </form>
+            <p id="memberLoginError" class="error-msg"></p>
+        </div>
+    </div>
 
-            <!-- ADMIN LOGIN FORM -->
-            <form id="adminLoginForm" class="hidden" onsubmit="handleAdminLogin(event)">
+    <!-- ADMIN LOGIN MODAL / SCREEN -->
+    <div id="adminLoginScreen" class="auth-container hidden">
+        <button class="admin-top-btn" onclick="showMemberLogin()">◀ Back to Member Login</button>
+
+        <div class="auth-card">
+            <h2>Admin Portal</h2>
+            <p class="subtitle">Authorized Personnel Only</p>
+
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
                 <div class="form-group">
-                    <label>Admin Username</label>
+                    <label>Admin ID</label>
                     <input type="text" id="adminUser" required value="admin">
                 </div>
                 <div class="form-group">
                     <label>Password</label>
                     <input type="password" id="adminPass" required value="admin123">
                 </div>
-                <button type="submit" class="btn btn-primary">Login as Admin</button>
+                <button type="submit" class="btn btn-admin">Login as Admin</button>
             </form>
-            <p id="loginError" class="error-msg"></p>
+            <p id="adminLoginError" class="error-msg"></p>
         </div>
     </div>
 
@@ -50,10 +55,10 @@
     <div id="dashboardScreen" class="hidden">
         <header class="navbar">
             <div>
-                <h1>Payroll & Attendance Portal</h1>
+                <h1 id="portalHeaderTitle">Payroll & Attendance Portal</h1>
                 <p id="userWelcome"></p>
             </div>
-            <button class="btn btn-danger" onclick="logout()">Logout</button>
+            <button class="btn-sm btn-danger" onclick="logout()">Logout</button>
         </header>
 
         <div class="container">
@@ -68,7 +73,7 @@
                 <div class="calendar-grid" id="calendarGrid"></div>
 
                 <div class="legend">
-                    <span class="legend-item present-bg">■ Present (Weekday)</span>
+                    <span class="legend-item present-bg">■ Present (Auto)</span>
                     <span class="legend-item holiday-bg">■ Holiday</span>
                     <span class="legend-item weekend-bg">■ Weekend</span>
                 </div>
@@ -78,8 +83,8 @@
                     <h3>⚙️ Admin: Holiday Management</h3>
                     <div class="form-inline">
                         <input type="date" id="customHolidayDate">
-                        <input type="text" id="customHolidayTitle" placeholder="Holiday Title">
-                        <button class="btn-sm" onclick="addCustomHoliday()">Add Holiday</button>
+                        <input type="text" id="customHolidayTitle" placeholder="Holiday Description">
+                        <button class="btn-sm btn-admin" onclick="addCustomHoliday()">Add Holiday</button>
                     </div>
                 </div>
             </div>
@@ -88,17 +93,17 @@
             <div class="card">
                 <h2>Earnings & Statutory Deductions</h2>
 
-                <!-- ADMIN ONLY: MEMBER MANAGEMENT & SALARY ADJUSTMENT -->
+                <!-- ADMIN ONLY: MEMBER MANAGEMENT -->
                 <div id="adminMemberSection" class="admin-panel hidden">
-                    <h3>👥 Admin: Add New Member / Employee</h3>
+                    <h3>👥 Admin: Add New Member</h3>
                     <form onsubmit="handleAddMember(event)">
                         <div class="form-group">
-                            <label>Member Username</label>
-                            <input type="text" id="newMemUser" required>
+                            <label>Member Name / Username</label>
+                            <input type="text" id="newMemName" required placeholder="e.g. John Doe">
                         </div>
                         <div class="form-group">
-                            <label>Access Code</label>
-                            <input type="text" id="newMemCode" required placeholder="e.g. EMP101">
+                            <label>Assign Safety Card Number</label>
+                            <input type="text" id="newMemCardNo" required placeholder="e.g. SC-1002">
                         </div>
                         <div class="form-group">
                             <label>Basic Salary (₹)</label>
@@ -108,10 +113,10 @@
                             <label>Allowances (₹)</label>
                             <input type="number" id="newMemAllowance" required value="4000">
                         </div>
-                        <button type="submit" class="btn-sm btn-primary">Create Member</button>
+                        <button type="submit" class="btn-sm btn-admin" style="width: 100%;">Register Member</button>
                     </form>
 
-                    <h4 style="margin-top: 15px;">Registered Members</h4>
+                    <h4 style="margin-top: 15px;">Registered Safety Cards</h4>
                     <ul id="memberList" class="member-list"></ul>
                 </div>
 
@@ -141,7 +146,7 @@
                         <td id="grossSalary">₹0</td>
                     </tr>
                     <tr>
-                        <td>PF Deduction (12% of Basic, Max ₹1,800)</td>
+                        <td>PF Deduction (12% of Basic, Capped @ ₹1,800)</td>
                         <td id="pfDeduction" class="text-danger">-₹0</td>
                     </tr>
                     <tr>
