@@ -1,8 +1,7 @@
-// Google Calendar API Config
 const GOOGLE_API_KEY = "YOUR_GOOGLE_CALENDAR_API_KEY";
 const HOLIDAY_CALENDAR_ID = "en.indian.official#holiday@group.v.calendar.google.com";
 
-// Initialize LocalStorage with Sample Members if Empty
+// Initialize default members if empty
 if (!localStorage.getItem("members")) {
     const initialMembers = [
         { cardNo: "SC-1001", name: "John Doe", phone: "9876543210", gatepass: "GP-101", basic: 20000, allowance: 5000 },
@@ -12,90 +11,152 @@ if (!localStorage.getItem("members")) {
 }
 
 let currentDate = new Date();
-let currentUser = null;
 let apiHolidays = {};
-let customHolidays = {};
+let customHolidays = JSON.parse(localStorage.getItem("customHolidays")) || {};
 
-// NAVIGATION
-function showAdminLogin() {
-    document.getElementById("homeScreen").classList.add("hidden");
-    document.getElementById("adminLoginScreen").classList.remove("hidden");
-    document.getElementById("memberLoginError").innerText = "";
-}
+document.addEventListener("DOMContentLoaded", () => {
+    // Check if on Member Portal Index Page
+    if (document.getElementById("homeScreen")) {
+        const loggedMember = JSON.parse(localStorage.getItem("loggedMember"));
+        if (loggedMember) {
+            startMemberDashboard(loggedMember);
+        }
+    }
 
-function showMemberLogin() {
-    document.getElementById("adminLoginScreen").classList.add("hidden");
-    document.getElementById("homeScreen").classList.remove("hidden");
-    document.getElementById("adminLoginError").innerText = "";
-}
+    // Check if on Admin Page
+    if (document.getElementById("adminLoginScreen")) {
+        if (localStorage.getItem("isAdminLoggedIn") === "true") {
+            showAdminDashboard();
+        } else {
+            renderMemberTable();
+        }
+    }
+});
 
-// MEMBER LOGIN
-function handleSafetyCardLogin(e) {
-    e.preventDefault();
+// --- MEMBER PORTAL FUNCTIONS ---
+function handleSafetyCardLogin(event) {
+    event.preventDefault();
     const cardInput = document.getElementById("safetyCardNumber").value.trim();
     const members = JSON.parse(localStorage.getItem("members")) || [];
 
     const foundMember = members.find(m => m.cardNo.toLowerCase() === cardInput.toLowerCase());
 
     if (foundMember) {
-        currentUser = { ...foundMember, role: "member" };
-        startDashboard();
+        localStorage.setItem("loggedMember", JSON.stringify(foundMember));
+        startMemberDashboard(foundMember);
     } else {
-        document.getElementById("memberLoginError").innerText = "Invalid Safety Card Number. Please check and try again.";
+        document.getElementById("memberLoginError").innerText = "Invalid Safety Card Number. Try: SC-1001";
     }
 }
 
-// ADMIN LOGIN
-function handleAdminLogin(e) {
-    e.preventDefault();
+function startMemberDashboard(member) {
+    document.getElementById("homeScreen").classList.add("hidden");
+    document.getElementById("dashboardScreen").classList.remove("hidden");
+    document.getElementById("userWelcome").innerText = `Welcome, ${member.name} (${member.cardNo})`;
+
+    document.getElementById("infoMemName").innerText = member.name;
+    document.getElementById("infoMemPhone").innerText = member.phone;
+    document.getElementById("infoMemGatepass").innerText = member.gatepass;
+
+    fetchGoogleHolidays(currentDate.getFullYear(), member);
+}
+
+function logout() {
+    localStorage.removeItem("loggedMember");
+    document.getElementById("dashboardScreen").classList.add("hidden");
+    document.getElementById("homeScreen").classList.remove("hidden");
+    document.getElementById("safetyCardNumber").value = "";
+}
+
+// --- ADMIN PORTAL FUNCTIONS ---
+function handleAdminLogin(event) {
+    event.preventDefault();
     const user = document.getElementById("adminUser").value.trim();
     const pass = document.getElementById("adminPass").value.trim();
 
     if (user === "admin" && pass === "admin123") {
-        currentUser = { name: "Administrator", role: "admin" };
-        startDashboard();
+        localStorage.setItem("isAdminLoggedIn", "true");
+        showAdminDashboard();
     } else {
         document.getElementById("adminLoginError").innerText = "Invalid Admin ID or Password!";
     }
 }
 
-// DASHBOARD
-function startDashboard() {
-    document.getElementById("homeScreen").classList.add("hidden");
+function showAdminDashboard() {
     document.getElementById("adminLoginScreen").classList.add("hidden");
-    document.getElementById("dashboardScreen").classList.remove("hidden");
+    document.getElementById("adminDashboardScreen").classList.remove("hidden");
+    renderMemberTable();
+}
 
-    if (currentUser.role === "admin") {
-        document.getElementById("portalHeaderTitle").innerText = "Admin Control Center";
-        document.getElementById("userWelcome").innerText = `Logged in as: Admin`;
-        document.getElementById("adminHolidaySection").classList.remove("hidden");
-        document.getElementById("adminMemberSection").classList.remove("hidden");
-        document.getElementById("memberDetailCard").classList.add("hidden");
-        renderMemberTable();
-    } else {
-        document.getElementById("portalHeaderTitle").innerText = "Employee Self-Service Portal";
-        document.getElementById("userWelcome").innerText = `Welcome, ${currentUser.name} (${currentUser.cardNo})`;
-        document.getElementById("adminHolidaySection").classList.add("hidden");
-        document.getElementById("adminMemberSection").classList.add("hidden");
-        
-        document.getElementById("memberDetailCard").classList.remove("hidden");
-        document.getElementById("infoMemName").innerText = currentUser.name;
-        document.getElementById("infoMemPhone").innerText = currentUser.phone;
-        document.getElementById("infoMemGatepass").innerText = currentUser.gatepass;
+function adminLogout() {
+    localStorage.removeItem("isAdminLoggedIn");
+    document.getElementById("adminDashboardScreen").classList.add("hidden");
+    document.getElementById("adminLoginScreen").classList.remove("hidden");
+}
+
+function handleAddMember(e) {
+    e.preventDefault();
+    const cardNo = document.getElementById("newMemCardNo").value.trim();
+    const name = document.getElementById("newMemName").value.trim();
+    const phone = document.getElementById("newMemPhone").value.trim();
+    const gatepass = document.getElementById("newMemGatepass").value.trim();
+    const basic = parseFloat(document.getElementById("newMemBasic").value) || 0;
+    const allowance = parseFloat(document.getElementById("newMemAllowance").value) || 0;
+
+    let members = JSON.parse(localStorage.getItem("members")) || [];
+
+    if (members.some(m => m.cardNo.toLowerCase() === cardNo.toLowerCase())) {
+        alert("This Safety Card Number is already assigned!");
+        return;
     }
 
-    fetchGoogleHolidays(currentDate.getFullYear());
+    members.push({ cardNo, name, phone, gatepass, basic, allowance });
+    localStorage.setItem("members", JSON.stringify(members));
+
+    alert(`Member "${name}" registered successfully!\nSafety Card: ${cardNo}`);
+    
+    document.getElementById("newMemCardNo").value = "";
+    document.getElementById("newMemName").value = "";
+    document.getElementById("newMemPhone").value = "";
+    document.getElementById("newMemGatepass").value = "";
+    
+    renderMemberTable();
 }
 
-function logout() {
-    currentUser = null;
-    document.getElementById("safetyCardNumber").value = "";
-    document.getElementById("dashboardScreen").classList.add("hidden");
-    showMemberLogin();
+function renderMemberTable() {
+    const members = JSON.parse(localStorage.getItem("members")) || [];
+    const tbody = document.getElementById("memberTableBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    members.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td><strong>${m.cardNo}</strong></td>
+            <td>${m.name}</td>
+            <td>${m.phone}</td>
+            <td>${m.gatepass}</td>
+            <td>₹${m.basic}</td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
-// GOOGLE CALENDAR HOLIDAYS
-async function fetchGoogleHolidays(year) {
+function addCustomHoliday() {
+    const date = document.getElementById("customHolidayDate").value;
+    const title = document.getElementById("customHolidayTitle").value;
+    if (date && title) {
+        customHolidays[date] = title;
+        localStorage.setItem("customHolidays", JSON.stringify(customHolidays));
+        alert(`Holiday "${title}" added successfully!`);
+        document.getElementById("customHolidayDate").value = "";
+        document.getElementById("customHolidayTitle").value = "";
+    } else {
+        alert("Please select a date and enter a title.");
+    }
+}
+
+// --- CALENDAR & PAYROLL LOGIC ---
+async function fetchGoogleHolidays(year, member) {
     if (GOOGLE_API_KEY === "YOUR_GOOGLE_CALENDAR_API_KEY") {
         apiHolidays = {
             [`${year}-01-26`]: "Republic Day",
@@ -103,7 +164,7 @@ async function fetchGoogleHolidays(year) {
             [`${year}-10-02`]: "Gandhi Jayanti",
             [`${year}-12-25`]: "Christmas"
         };
-        renderCalendar();
+        renderCalendar(member);
         return;
     }
 
@@ -125,15 +186,15 @@ async function fetchGoogleHolidays(year) {
     } catch (err) {
         console.error("Calendar fetch error:", err);
     }
-    renderCalendar();
+    renderCalendar(member);
 }
 
-// RENDER CALENDAR
-function renderCalendar() {
+function renderCalendar(member) {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
     const grid = document.getElementById("calendarGrid");
+    if (!grid) return;
     grid.innerHTML = "";
 
     const monthNames = ["January", "February", "March", "April", "May", "June", 
@@ -184,21 +245,12 @@ function renderCalendar() {
     document.getElementById("presentDays").innerText = presentCount;
     document.getElementById("holidayCount").innerText = holidayCount;
 
-    calculatePayroll();
+    calculatePayroll(member);
 }
 
-// PAYROLL & DEDUCTIONS
-function calculatePayroll() {
-    let basic = 0;
-    let allowance = 0;
-
-    if (currentUser.role === "member") {
-        basic = parseFloat(currentUser.basic) || 0;
-        allowance = parseFloat(currentUser.allowance) || 0;
-    } else {
-        basic = 20000;
-        allowance = 5000;
-    }
+function calculatePayroll(member) {
+    const basic = parseFloat(member.basic) || 0;
+    const allowance = parseFloat(member.allowance) || 0;
 
     const gross = basic + allowance;
     const pfBasic = Math.min(basic, 25000);
@@ -219,63 +271,8 @@ function calculatePayroll() {
     document.getElementById("netSalary").innerText = `₹${net.toLocaleString()}`;
 }
 
-// ADMIN MEMBER MANAGEMENT
-function handleAddMember(e) {
-    e.preventDefault();
-    const cardNo = document.getElementById("newMemCardNo").value.trim();
-    const name = document.getElementById("newMemName").value.trim();
-    const phone = document.getElementById("newMemPhone").value.trim();
-    const gatepass = document.getElementById("newMemGatepass").value.trim();
-    const basic = parseFloat(document.getElementById("newMemBasic").value) || 0;
-    const allowance = parseFloat(document.getElementById("newMemAllowance").value) || 0;
-
-    let members = JSON.parse(localStorage.getItem("members")) || [];
-
-    if (members.some(m => m.cardNo.toLowerCase() === cardNo.toLowerCase())) {
-        alert("This Safety Card Number is already assigned!");
-        return;
-    }
-
-    members.push({ cardNo, name, phone, gatepass, basic, allowance });
-    localStorage.setItem("members", JSON.stringify(members));
-
-    alert(`Member "${name}" registered successfully!\nSafety Card: ${cardNo}`);
-    
-    document.getElementById("newMemCardNo").value = "";
-    document.getElementById("newMemName").value = "";
-    document.getElementById("newMemPhone").value = "";
-    document.getElementById("newMemGatepass").value = "";
-    
-    renderMemberTable();
-}
-
-function renderMemberTable() {
-    const members = JSON.parse(localStorage.getItem("members")) || [];
-    const tbody = document.getElementById("memberTableBody");
-    tbody.innerHTML = "";
-    members.forEach(m => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td><strong>${m.cardNo}</strong></td>
-            <td>${m.name}</td>
-            <td>${m.phone}</td>
-            <td>${m.gatepass}</td>
-            <td>₹${m.basic}</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
 function changeMonth(delta) {
     currentDate.setMonth(currentDate.getMonth() + delta);
-    renderCalendar();
-}
-
-function addCustomHoliday() {
-    const date = document.getElementById("customHolidayDate").value;
-    const title = document.getElementById("customHolidayTitle").value;
-    if (date && title) {
-        customHolidays[date] = title;
-        renderCalendar();
-    }
+    const member = JSON.parse(localStorage.getItem("loggedMember"));
+    if (member) fetchGoogleHolidays(currentDate.getFullYear(), member);
 }
