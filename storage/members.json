@@ -1,1 +1,19 @@
+[
+  {
+    "cardNo": "VW1222626069",
+    "name": "AMAN KUMAR CHHALI",
+    "phone": "6202255617",
+    "gatepass": "TSP/459062",
+    "basic": 20000,
+    "allowance": 5000
+  },
+  {
+    "cardNo": "SC-1002",
+    "name": "Jane Smith",
+    "phone": "9123456789",
+    "gatepass": "GP-102",
+    "basic": 18000,
+    "allowance": 4000
+  }
+]
 
