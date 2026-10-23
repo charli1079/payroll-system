@@ -1,1 +1,51 @@
+* { box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; }
+body { background-color: #f1f5f9; color: #1e293b; padding: 20px; }
+
+/* Authentication UI */
+.auth-container { display: flex; justify-content: center; align-items: center; min-height: 90vh; }
+.auth-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+.tab-buttons { display: flex; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; }
+.tab-buttons button { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; font-weight: 600; color: #64748b; }
+.tab-buttons button.active { color: #2563eb; border-bottom: 2px solid #2563eb; margin-bottom: -2px; }
+
+.form-group { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #475569; }
+input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
+.btn { width: 100%; background: #2563eb; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+.btn-primary { background: #0f172a; }
+.btn-danger { background: #ef4444; }
+.btn-sm { padding: 6px 12px; font-size: 12px; border: none; border-radius: 4px; background: #2563eb; color: white; cursor: pointer; }
+.error-msg { color: #dc2626; font-size: 13px; margin-top: 10px; text-align: center; }
+
+/* Dashboard UI */
+.navbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+.container { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px; max-width: 1300px; margin: 0 auto; }
+.card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+h2 { margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; font-size: 18px; }
+
+/* Calendar */
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.day-header { font-weight: bold; padding: 8px; background: #e2e8f0; border-radius: 4px; font-size: 12px; }
+.day-cell { padding: 12px 4px; border-radius: 6px; font-size: 13px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.day-cell.present { background: #dcfce7; color: #166534; font-weight: 600; }
+.day-cell.holiday { background: #fee2e2; color: #991b1b; font-weight: 600; }
+.day-cell.weekend { background: #f1f5f9; color: #64748b; }
+.holiday-label { font-size: 9px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
+
+/* Legend & Admin Boxes */
+.legend { margin-top: 15px; font-size: 12px; display: flex; gap: 15px; }
+.legend-item { font-weight: bold; }
+.present-bg { color: #166534; } .holiday-bg { color: #991b1b; } .weekend-bg { color: #64748b; }
+.admin-panel { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 15px; border-radius: 8px; margin-top: 15px; }
+.form-inline { display: flex; gap: 8px; }
+
+/* Results Table */
+.results-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+.results-table td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+.results-table tr.total { font-size: 16px; background: #f8fafc; }
+.text-danger { color: #dc2626; } .text-success { color: #16a34a; }
+.hidden { display: none !important; }
+.member-list { list-style: none; font-size: 13px; margin-top: 8px; max-height: 100px; overflow-y: auto; }
+.member-list li { padding: 4px 0; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; }
 
