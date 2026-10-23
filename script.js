@@ -1,11 +1,11 @@
 const GOOGLE_API_KEY = "YOUR_GOOGLE_CALENDAR_API_KEY";
 const HOLIDAY_CALENDAR_ID = "en.indian.official#holiday@group.v.calendar.google.com";
 
-// Initialize default members if empty (with decimal numbers supported)
+// Initialize default members (Daily Wage based)
 if (!localStorage.getItem("members")) {
     const initialMembers = [
-        { cardNo: "SC-1001", name: "John Doe", phone: "9876543210", gatepass: "GP-101", dailyWage: 650.50, basic: 20000.00, allowance: 5000.00 },
-        { cardNo: "SC-1002", name: "Jane Smith", phone: "9123456789", gatepass: "GP-102", dailyWage: 0.00, basic: 18000.00, allowance: 4000.00 }
+        { cardNo: "SC-1001", name: "John Doe", phone: "9876543210", gatepass: "GP-101", dailyWage: 650.50 },
+        { cardNo: "SC-1002", name: "Jane Smith", phone: "9123456789", gatepass: "GP-102", dailyWage: 580.00 }
     ];
     localStorage.setItem("members", JSON.stringify(initialMembers));
 }
@@ -93,39 +93,63 @@ function adminLogout() {
     document.getElementById("adminLoginScreen").classList.remove("hidden");
 }
 
-function handleAddMember(e) {
+// ADD OR UPDATE MEMBER (EDIT SUPPORT)
+function handleAddOrUpdateMember(e) {
     e.preventDefault();
+    const editIndex = parseInt(document.getElementById("editIndex").value);
     const cardNo = document.getElementById("newMemCardNo").value.trim();
     const name = document.getElementById("newMemName").value.trim();
     const phone = document.getElementById("newMemPhone").value.trim();
     const gatepass = document.getElementById("newMemGatepass").value.trim();
-    
-    // Parse decimal numbers accurately
     const dailyWage = parseFloat(document.getElementById("newMemDailyWage").value) || 0.00;
-    const basic = parseFloat(document.getElementById("newMemBasic").value) || 0.00;
-    const allowance = parseFloat(document.getElementById("newMemAllowance").value) || 0.00;
 
     let members = JSON.parse(localStorage.getItem("members")) || [];
 
-    if (members.some(m => m.cardNo.toLowerCase() === cardNo.toLowerCase())) {
-        alert("This Safety Card Number is already assigned!");
-        return;
+    if (editIndex === -1) {
+        // Adding New Member
+        if (members.some(m => m.cardNo.toLowerCase() === cardNo.toLowerCase())) {
+            alert("This Safety Card Number is already assigned!");
+            return;
+        }
+        members.push({ cardNo, name, phone, gatepass, dailyWage });
+        alert(`Member "${name}" registered successfully!\nSafety Card: ${cardNo}`);
+    } else {
+        // Updating Existing Member
+        members[editIndex] = { cardNo, name, phone, gatepass, dailyWage };
+        alert(`Member "${name}" details updated successfully!`);
     }
 
-    members.push({ cardNo, name, phone, gatepass, dailyWage, basic, allowance });
     localStorage.setItem("members", JSON.stringify(members));
-
-    alert(`Member "${name}" registered successfully!\nSafety Card: ${cardNo}`);
-    
-    document.getElementById("newMemCardNo").value = "";
-    document.getElementById("newMemName").value = "";
-    document.getElementById("newMemPhone").value = "";
-    document.getElementById("newMemGatepass").value = "";
-    document.getElementById("newMemDailyWage").value = "0.00";
-    document.getElementById("newMemBasic").value = "18000.00";
-    document.getElementById("newMemAllowance").value = "4000.00";
-    
+    cancelEdit();
     renderMemberTable();
+}
+
+function editMember(index) {
+    const members = JSON.parse(localStorage.getItem("members")) || [];
+    const member = members[index];
+
+    if (member) {
+        document.getElementById("editIndex").value = index;
+        document.getElementById("newMemCardNo").value = member.cardNo;
+        document.getElementById("newMemName").value = member.name;
+        document.getElementById("newMemPhone").value = member.phone;
+        document.getElementById("newMemGatepass").value = member.gatepass;
+        document.getElementById("newMemDailyWage").value = member.dailyWage;
+
+        document.getElementById("formTitle").innerText = "✏️ Edit Member Details";
+        document.getElementById("submitBtn").innerText = "Update Member";
+        document.getElementById("submitBtn").className = "btn btn-primary";
+        document.getElementById("cancelEditBtn").classList.remove("hidden");
+    }
+}
+
+function cancelEdit() {
+    document.getElementById("editIndex").value = "-1";
+    document.getElementById("memberForm").reset();
+    document.getElementById("formTitle").innerText = "👥 Register New Member";
+    document.getElementById("submitBtn").innerText = "Register Member";
+    document.getElementById("submitBtn").className = "btn btn-admin";
+    document.getElementById("cancelEditBtn").classList.add("hidden");
 }
 
 function renderMemberTable() {
@@ -133,13 +157,15 @@ function renderMemberTable() {
     const tbody = document.getElementById("memberTableBody");
     if (!tbody) return;
     tbody.innerHTML = "";
-    members.forEach(m => {
+    members.forEach((m, index) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td><strong>${m.cardNo}</strong></td>
             <td>${m.name}</td>
             <td>₹${parseFloat(m.dailyWage || 0).toFixed(2)}</td>
-            <td>₹${parseFloat(m.basic || 0).toFixed(2)}</td>
+            <td>
+                <button class="btn-sm btn-edit" onclick="editMember(${index})">Edit</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -159,7 +185,7 @@ function addCustomHoliday() {
     }
 }
 
-// --- CALENDAR & PAYROLL CALCULATION (Decimal & Daily Wage Aware) ---
+// --- CALENDAR & PAYROLL CALCULATION (Daily Wage Based) ---
 async function fetchGoogleHolidays(year, member) {
     if (GOOGLE_API_KEY === "YOUR_GOOGLE_CALENDAR_API_KEY") {
         apiHolidays = {
@@ -254,33 +280,23 @@ function renderCalendar(member) {
 
 function calculatePayroll(member, presentCount, holidayCount, totalDays) {
     const dailyWage = parseFloat(member.dailyWage) || 0.00;
-    const basic = parseFloat(member.basic) || 0.00;
-    const allowance = parseFloat(member.allowance) || 0.00;
+    const paidDays = presentCount + holidayCount;
 
-    let earnedBasicOrWage = 0;
+    // Gross Salary calculated purely on Daily Wage × Paid Days
+    const gross = dailyWage * paidDays;
 
-    // If Daily Wage is set (> 0), calculate based on (Present Days + Paid Holidays) × Daily Wage
-    if (dailyWage > 0) {
-        const paidDays = presentCount + holidayCount;
-        earnedBasicOrWage = dailyWage * paidDays;
-    } else {
-        // Otherwise use proportional basic salary calculation
-        earnedBasicOrWage = basic * ((presentCount + holidayCount) / totalDays);
-    }
-
-    const gross = earnedBasicOrWage + allowance;
-    const pfBasic = Math.min(basic > 0 ? basic : earnedBasicOrWage, 25000);
+    // Statutory Deductions based on Daily Wage Gross Salary
+    const pfBasic = Math.min(gross, 15000); // 12% PF on gross up to 15,000 ceiling
     const pf = pfBasic * 0.12;
 
     let esi = 0;
     if (gross <= 21000) {
-        esi = gross * 0.0075;
+        esi = gross * 0.0075; // 0.75% ESI if Gross <= 21,000
     }
 
     const net = gross - (pf + esi);
 
-    document.getElementById("dispBasic").innerText = `₹${earnedBasicOrWage.toFixed(2)}`;
-    document.getElementById("dispAllowance").innerText = `₹${allowance.toFixed(2)}`;
+    document.getElementById("paidDays").innerText = paidDays;
     document.getElementById("grossSalary").innerText = `₹${gross.toFixed(2)}`;
     document.getElementById("pfDeduction").innerText = `-₹${pf.toFixed(2)}`;
     document.getElementById("esiDeduction").innerText = `-₹${esi.toFixed(2)}`;
