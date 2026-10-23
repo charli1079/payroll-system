@@ -42,10 +42,11 @@
         </header>
 
         <div class="admin-grid-layout">
-            <!-- MEMBER REGISTRATION FORM -->
+            <!-- MEMBER REGISTRATION / EDIT FORM -->
             <div class="card">
-                <h2>👥 Register New Member</h2>
-                <form onsubmit="handleAddMember(event)">
+                <h2 id="formTitle">👥 Register New Member</h2>
+                <form id="memberForm" onsubmit="handleAddOrUpdateMember(event)">
+                    <input type="hidden" id="editIndex" value="-1">
                     <div class="form-group">
                         <label>Safety Card Number *</label>
                         <input type="text" id="newMemCardNo" required placeholder="e.g. SC-1003">
@@ -63,18 +64,14 @@
                         <input type="text" id="newMemGatepass" required placeholder="e.g. GP-5541">
                     </div>
                     <div class="form-group">
-                        <label>Daily Wage (₹) (Optional / Decimal allowed)</label>
-                        <input type="number" id="newMemDailyWage" step="0.01" min="0" value="0" placeholder="e.g. 650.50">
+                        <label>Daily Wage (₹) * (Decimal allowed)</label>
+                        <input type="number" id="newMemDailyWage" step="0.01" min="0" required placeholder="e.g. 650.50">
                     </div>
-                    <div class="form-group">
-                        <label>Monthly Basic Salary (₹) (Decimal allowed)</label>
-                        <input type="number" id="newMemBasic" step="0.01" min="0" required value="18000.00">
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button type="submit" id="submitBtn" class="btn btn-admin">Register Member</button>
+                        <button type="button" id="cancelEditBtn" class="btn btn-danger hidden" onclick="cancelEdit()">Cancel Edit</button>
                     </div>
-                    <div class="form-group">
-                        <label>Allowances (₹) (Decimal allowed)</label>
-                        <input type="number" id="newMemAllowance" step="0.01" min="0" required value="4000.00">
-                    </div>
-                    <button type="submit" class="btn btn-admin" style="margin-top: 10px;">Register Member</button>
                 </form>
             </div>
 
@@ -88,7 +85,7 @@
                                 <th>Safety Card</th>
                                 <th>Name</th>
                                 <th>Daily Wage</th>
-                                <th>Basic Salary</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="memberTableBody"></tbody>
