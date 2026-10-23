@@ -1,1 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Management Center</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <a href="index.html" class="admin-top-btn">◀ Back to Member Login</a>
+
+    <!-- ADMIN LOGIN SCREEN -->
+    <div id="adminLoginScreen" class="auth-container">
+        <div class="auth-card">
+            <h2>Admin Portal</h2>
+            <p class="subtitle">Authorized Personnel Only</p>
+
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label>Admin ID</label>
+                    <input type="text" id="adminUser" required value="admin">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="adminPass" required value="admin123">
+                </div>
+                <button type="submit" class="btn btn-admin">Login to Admin Panel</button>
+            </form>
+            <p id="adminLoginError" class="error-msg"></p>
+        </div>
+    </div>
+
+    <!-- ADMIN CONTROL PANEL (Hidden until logged in) -->
+    <div id="adminDashboardScreen" class="hidden container-admin">
+        <header class="navbar">
+            <div>
+                <h1>Admin Control Center</h1>
+                <p>Manage Employee Registry & Company Holidays</p>
+            </div>
+            <button class="btn-sm btn-danger" onclick="adminLogout()">Logout</button>
+        </header>
+
+        <div class="admin-grid-layout">
+            <!-- MEMBER REGISTRATION FORM -->
+            <div class="card">
+                <h2>👥 Register New Member</h2>
+                <form onsubmit="handleAddMember(event)">
+                    <div class="form-group">
+                        <label>Safety Card Number *</label>
+                        <input type="text" id="newMemCardNo" required placeholder="e.g. SC-1003">
+                    </div>
+                    <div class="form-group">
+                        <label>Member Full Name *</label>
+                        <input type="text" id="newMemName" required placeholder="e.g. Rahul Sharma">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone Number *</label>
+                        <input type="tel" id="newMemPhone" required placeholder="e.g. 9876543210">
+                    </div>
+                    <div class="form-group">
+                        <label>Gatepass Number *</label>
+                        <input type="text" id="newMemGatepass" required placeholder="e.g. GP-5541">
+                    </div>
+                    <div class="form-group">
+                        <label>Basic Salary (₹) *</label>
+                        <input type="number" id="newMemBasic" required value="18000">
+                    </div>
+                    <div class="form-group">
+                        <label>Allowances (₹) *</label>
+                        <input type="number" id="newMemAllowance" required value="4000">
+                    </div>
+                    <button type="submit" class="btn btn-admin" style="margin-top: 10px;">Register Member</button>
+                </form>
+            </div>
+
+            <!-- REGISTERED MEMBERS LIST -->
+            <div class="card">
+                <h2>📋 Registered Members Directory</h2>
+                <div class="table-scroll-large">
+                    <table class="member-table">
+                        <thead>
+                            <tr>
+                                <th>Safety Card</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Gatepass</th>
+                                <th>Basic</th>
+                            </tr>
+                        </thead>
+                        <tbody id="memberTableBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- HOLIDAY MANAGEMENT -->
+                <h2 style="margin-top: 25px;">⚙️ Holiday Management</h2>
+                <div class="form-group">
+                    <label>Holiday Date</label>
+                    <input type="date" id="customHolidayDate">
+                </div>
+                <div class="form-group">
+                    <label>Holiday Description</label>
+                    <input type="text" id="customHolidayTitle" placeholder="e.g. Company Annual Day">
+                </div>
+                <button class="btn btn-primary" onclick="addCustomHoliday()">Add Company Holiday</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
 
