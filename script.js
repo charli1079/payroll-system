@@ -1,20 +1,29 @@
+// Replace with your actual live Render backend URL
+const API_BASE_URL = "https://payroll-backend-3u74.onrender.com/";
+
 const GOOGLE_API_KEY = "YOUR_GOOGLE_CALENDAR_API_KEY";
 const HOLIDAY_CALENDAR_ID = "en.indian.official#holiday@group.v.calendar.google.com";
-
-// Initialize default members (Daily Wage based)
-if (!localStorage.getItem("members")) {
-    const initialMembers = [
-        { cardNo: "SC-1001", name: "John Doe", phone: "9876543210", gatepass: "GP-101", dailyWage: 650.50 },
-        { cardNo: "SC-1002", name: "Jane Smith", phone: "9123456789", gatepass: "GP-102", dailyWage: 580.00 }
-    ];
-    localStorage.setItem("members", JSON.stringify(initialMembers));
-}
 
 let currentDate = new Date();
 let apiHolidays = {};
 let customHolidays = JSON.parse(localStorage.getItem("customHolidays")) || {};
 
-document.addEventListener("DOMContentLoaded", () => {
+// Sync members from MongoDB Atlas on app load
+async function syncMembersFromCloud() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/members`);
+        if (res.ok) {
+            const members = await res.json();
+            localStorage.setItem("members", JSON.stringify(members));
+        }
+    } catch (err) {
+        console.warn("Using offline cached member data:", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await syncMembersFromCloud();
+
     if (document.getElementById("homeScreen")) {
         const loggedMember = JSON.parse(localStorage.getItem("loggedMember"));
         if (loggedMember) {
@@ -43,7 +52,7 @@ function handleSafetyCardLogin(event) {
         localStorage.setItem("loggedMember", JSON.stringify(foundMember));
         startMemberDashboard(foundMember);
     } else {
-        document.getElementById("memberLoginError").innerText = "Invalid Safety Card Number. Try: SC-1001";
+        document.getElementById("memberLoginError").innerText = "Invalid Safety Card Number. Please check and try again.";
     }
 }
 
@@ -81,9 +90,10 @@ function handleAdminLogin(event) {
     }
 }
 
-function showAdminDashboard() {
+async function showAdminDashboard() {
     document.getElementById("adminLoginScreen").classList.add("hidden");
     document.getElementById("adminDashboardScreen").classList.remove("hidden");
+    await syncMembersFromCloud();
     renderMemberTable();
 }
 
@@ -93,35 +103,36 @@ function adminLogout() {
     document.getElementById("adminLoginScreen").classList.remove("hidden");
 }
 
-// ADD OR UPDATE MEMBER (EDIT SUPPORT)
-function handleAddOrUpdateMember(e) {
+// ADD OR UPDATE MEMBER (SYNCED TO MONGODB ATLAS)
+async function handleAddOrUpdateMember(e) {
     e.preventDefault();
-    const editIndex = parseInt(document.getElementById("editIndex").value);
     const cardNo = document.getElementById("newMemCardNo").value.trim();
     const name = document.getElementById("newMemName").value.trim();
     const phone = document.getElementById("newMemPhone").value.trim();
     const gatepass = document.getElementById("newMemGatepass").value.trim();
     const dailyWage = parseFloat(document.getElementById("newMemDailyWage").value) || 0.00;
 
-    let members = JSON.parse(localStorage.getItem("members")) || [];
+    const memberData = { cardNo, name, phone, gatepass, dailyWage };
 
-    if (editIndex === -1) {
-        // Adding New Member
-        if (members.some(m => m.cardNo.toLowerCase() === cardNo.toLowerCase())) {
-            alert("This Safety Card Number is already assigned!");
-            return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/members/${cardNo}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(memberData)
+        });
+
+        if (res.ok) {
+            alert(`Member "${name}" saved successfully to MongoDB Atlas!`);
+            await syncMembersFromCloud();
+            cancelEdit();
+            renderMemberTable();
+        } else {
+            alert("Failed to save member to cloud database.");
         }
-        members.push({ cardNo, name, phone, gatepass, dailyWage });
-        alert(`Member "${name}" registered successfully!\nSafety Card: ${cardNo}`);
-    } else {
-        // Updating Existing Member
-        members[editIndex] = { cardNo, name, phone, gatepass, dailyWage };
-        alert(`Member "${name}" details updated successfully!`);
+    } catch (err) {
+        console.error("Database connection error:", err);
+        alert("Network error while connecting to MongoDB server.");
     }
-
-    localStorage.setItem("members", JSON.stringify(members));
-    cancelEdit();
-    renderMemberTable();
 }
 
 function editMember(index) {
@@ -131,6 +142,7 @@ function editMember(index) {
     if (member) {
         document.getElementById("editIndex").value = index;
         document.getElementById("newMemCardNo").value = member.cardNo;
+        document.getElementById("newMemCardNo").disabled = true; // CardNo acts as unique ID
         document.getElementById("newMemName").value = member.name;
         document.getElementById("newMemPhone").value = member.phone;
         document.getElementById("newMemGatepass").value = member.gatepass;
@@ -146,6 +158,7 @@ function editMember(index) {
 function cancelEdit() {
     document.getElementById("editIndex").value = "-1";
     document.getElementById("memberForm").reset();
+    document.getElementById("newMemCardNo").disabled = false;
     document.getElementById("formTitle").innerText = "👥 Register New Member";
     document.getElementById("submitBtn").innerText = "Register Member";
     document.getElementById("submitBtn").className = "btn btn-admin";
@@ -185,7 +198,7 @@ function addCustomHoliday() {
     }
 }
 
-// --- CALENDAR & PAYROLL CALCULATION (Daily Wage Based) ---
+// --- CALENDAR & PAYROLL CALCULATION ---
 async function fetchGoogleHolidays(year, member) {
     if (GOOGLE_API_KEY === "YOUR_GOOGLE_CALENDAR_API_KEY") {
         apiHolidays = {
@@ -275,23 +288,23 @@ function renderCalendar(member) {
     document.getElementById("presentDays").innerText = presentCount;
     document.getElementById("holidayCount").innerText = holidayCount;
 
-    calculatePayroll(member, presentCount, holidayCount, totalDays);
+    calculatePayroll(member, presentCount, holidayCount);
 }
 
-function calculatePayroll(member, presentCount, holidayCount, totalDays) {
+function calculatePayroll(member, presentCount, holidayCount) {
     const dailyWage = parseFloat(member.dailyWage) || 0.00;
     const paidDays = presentCount + holidayCount;
 
-    // Gross Salary calculated purely on Daily Wage × Paid Days
+    // Gross Salary = Daily Wage × Paid Days
     const gross = dailyWage * paidDays;
 
-    // Statutory Deductions based on Daily Wage Gross Salary
-    const pfBasic = Math.min(gross, 15000); // 12% PF on gross up to 15,000 ceiling
+    // Statutory Deductions
+    const pfBasic = Math.min(gross, 15000);
     const pf = pfBasic * 0.12;
 
     let esi = 0;
     if (gross <= 21000) {
-        esi = gross * 0.0075; // 0.75% ESI if Gross <= 21,000
+        esi = gross * 0.0075;
     }
 
     const net = gross - (pf + esi);
