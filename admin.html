@@ -31,7 +31,7 @@
         </div>
     </div>
 
-    <!-- ADMIN CONTROL PANEL (Hidden until logged in) -->
+    <!-- ADMIN CONTROL PANEL -->
     <div id="adminDashboardScreen" class="hidden container-admin">
         <header class="navbar">
             <div>
@@ -63,18 +63,22 @@
                         <input type="text" id="newMemGatepass" required placeholder="e.g. GP-5541">
                     </div>
                     <div class="form-group">
-                        <label>Basic Salary (₹) *</label>
-                        <input type="number" id="newMemBasic" required value="18000">
+                        <label>Daily Wage (₹) (Optional / Decimal allowed)</label>
+                        <input type="number" id="newMemDailyWage" step="0.01" min="0" value="0" placeholder="e.g. 650.50">
                     </div>
                     <div class="form-group">
-                        <label>Allowances (₹) *</label>
-                        <input type="number" id="newMemAllowance" required value="4000">
+                        <label>Monthly Basic Salary (₹) (Decimal allowed)</label>
+                        <input type="number" id="newMemBasic" step="0.01" min="0" required value="18000.00">
+                    </div>
+                    <div class="form-group">
+                        <label>Allowances (₹) (Decimal allowed)</label>
+                        <input type="number" id="newMemAllowance" step="0.01" min="0" required value="4000.00">
                     </div>
                     <button type="submit" class="btn btn-admin" style="margin-top: 10px;">Register Member</button>
                 </form>
             </div>
 
-            <!-- REGISTERED MEMBERS LIST -->
+            <!-- REGISTERED MEMBERS DIRECTORY & HOLIDAY MANAGEMENT -->
             <div class="card">
                 <h2>📋 Registered Members Directory</h2>
                 <div class="table-scroll-large">
@@ -83,16 +87,14 @@
                             <tr>
                                 <th>Safety Card</th>
                                 <th>Name</th>
-                                <th>Phone</th>
-                                <th>Gatepass</th>
-                                <th>Basic</th>
+                                <th>Daily Wage</th>
+                                <th>Basic Salary</th>
                             </tr>
                         </thead>
                         <tbody id="memberTableBody"></tbody>
                     </table>
                 </div>
 
-                <!-- HOLIDAY MANAGEMENT -->
                 <h2 style="margin-top: 25px;">⚙️ Holiday Management</h2>
                 <div class="form-group">
                     <label>Holiday Date</label>
@@ -110,4 +112,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
