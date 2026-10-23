@@ -8,14 +8,13 @@
 </head>
 <body>
 
-    <!-- HOME / MEMBER LOGIN SCREEN (LOADS FIRST) -->
+    <!-- HOME / MEMBER LOGIN SCREEN -->
     <div id="homeScreen" class="auth-container">
-        <!-- Top Left Admin Login Button -->
         <button class="admin-top-btn" onclick="showAdminLogin()">🔑 Admin Login</button>
 
         <div class="auth-card">
             <h2>Member Portal</h2>
-            <p class="subtitle">Please enter your Safety Card Number to access your attendance and payroll records.</p>
+            <p class="subtitle">Please enter your Safety Card Number to access your portal.</p>
 
             <form id="memberLoginForm" onsubmit="handleSafetyCardLogin(event)">
                 <div class="form-group">
@@ -28,7 +27,7 @@
         </div>
     </div>
 
-    <!-- ADMIN LOGIN MODAL / SCREEN -->
+    <!-- ADMIN LOGIN SCREEN -->
     <div id="adminLoginScreen" class="auth-container hidden">
         <button class="admin-top-btn" onclick="showMemberLogin()">◀ Back to Member Login</button>
 
@@ -51,7 +50,7 @@
         </div>
     </div>
 
-    <!-- MAIN DASHBOARD (Hidden until logged in) -->
+    <!-- MAIN DASHBOARD -->
     <div id="dashboardScreen" class="hidden">
         <header class="navbar">
             <div>
@@ -89,35 +88,65 @@
                 </div>
             </div>
 
-            <!-- PAYROLL DETAILS -->
+            <!-- PAYROLL & MEMBER MANAGEMENT -->
             <div class="card">
                 <h2>Earnings & Statutory Deductions</h2>
 
-                <!-- ADMIN ONLY: MEMBER MANAGEMENT -->
+                <!-- ADMIN ONLY: DETAILED MEMBER MANAGEMENT -->
                 <div id="adminMemberSection" class="admin-panel hidden">
                     <h3>👥 Admin: Add New Member</h3>
                     <form onsubmit="handleAddMember(event)">
-                        <div class="form-group">
-                            <label>Member Name / Username</label>
-                            <input type="text" id="newMemName" required placeholder="e.g. John Doe">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Safety Card Number *</label>
+                                <input type="text" id="newMemCardNo" required placeholder="e.g. SC-1003">
+                            </div>
+                            <div class="form-group">
+                                <label>Member Full Name *</label>
+                                <input type="text" id="newMemName" required placeholder="e.g. Rahul Sharma">
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number *</label>
+                                <input type="tel" id="newMemPhone" required placeholder="e.g. 9876543210">
+                            </div>
+                            <div class="form-group">
+                                <label>Gatepass Number *</label>
+                                <input type="text" id="newMemGatepass" required placeholder="e.g. GP-5541">
+                            </div>
+                            <div class="form-group">
+                                <label>Basic Salary (₹) *</label>
+                                <input type="number" id="newMemBasic" required value="18000">
+                            </div>
+                            <div class="form-group">
+                                <label>Allowances (₹) *</label>
+                                <input type="number" id="newMemAllowance" required value="4000">
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label>Assign Safety Card Number</label>
-                            <input type="text" id="newMemCardNo" required placeholder="e.g. SC-1002">
-                        </div>
-                        <div class="form-group">
-                            <label>Basic Salary (₹)</label>
-                            <input type="number" id="newMemBasic" required value="18000">
-                        </div>
-                        <div class="form-group">
-                            <label>Allowances (₹)</label>
-                            <input type="number" id="newMemAllowance" required value="4000">
-                        </div>
-                        <button type="submit" class="btn-sm btn-admin" style="width: 100%;">Register Member</button>
+                        <button type="submit" class="btn-sm btn-admin" style="width: 100%; margin-top: 5px;">Register Member</button>
                     </form>
 
-                    <h4 style="margin-top: 15px;">Registered Safety Cards</h4>
-                    <ul id="memberList" class="member-list"></ul>
+                    <h4 style="margin-top: 15px;">Registered Members List</h4>
+                    <div class="table-scroll">
+                        <table class="member-table">
+                            <thead>
+                                <tr>
+                                    <th>Safety Card</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Gatepass</th>
+                                    <th>Basic</th>
+                                </tr>
+                            </thead>
+                            <tbody id="memberTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- MEMBER DETAILS DISPLAY -->
+                <div id="memberDetailCard" class="member-info-box hidden">
+                    <p><strong>Member Name:</strong> <span id="infoMemName"></span></p>
+                    <p><strong>Phone:</strong> <span id="infoMemPhone"></span></p>
+                    <p><strong>Gatepass No:</strong> <span id="infoMemGatepass"></span></p>
                 </div>
 
                 <table class="results-table">
@@ -146,7 +175,7 @@
                         <td id="grossSalary">₹0</td>
                     </tr>
                     <tr>
-                        <td>PF Deduction (12% of Basic, Capped @ ₹1,800)</td>
+                        <td>PF Deduction (12% of Basic)</td>
                         <td id="pfDeduction" class="text-danger">-₹0</td>
                     </tr>
                     <tr>
