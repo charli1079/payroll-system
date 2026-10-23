@@ -8,7 +8,6 @@
 </head>
 <body>
 
-    <!-- TOP LEFT ADMIN PORTAL LINK -->
     <a href="admin.html" class="admin-top-btn">🔑 Go to Admin Portal</a>
 
     <!-- MEMBER LOGIN SCREEN -->
@@ -64,6 +63,7 @@
                     <p><strong>Member Name:</strong> <span id="infoMemName"></span></p>
                     <p><strong>Phone:</strong> <span id="infoMemPhone"></span></p>
                     <p><strong>Gatepass No:</strong> <span id="infoMemGatepass"></span></p>
+                    <p><strong>Daily Wage:</strong> ₹<span id="infoMemDailyWage">0.00</span></p>
                 </div>
 
                 <table class="results-table">
@@ -80,28 +80,28 @@
                         <td id="holidayCount">0</td>
                     </tr>
                     <tr>
-                        <td>Basic Salary</td>
-                        <td id="dispBasic">₹0</td>
+                        <td>Basic / Wage Earnings</td>
+                        <td id="dispBasic">₹0.00</td>
                     </tr>
                     <tr>
                         <td>Allowances</td>
-                        <td id="dispAllowance">₹0</td>
+                        <td id="dispAllowance">₹0.00</td>
                     </tr>
                     <tr>
                         <td><strong>Gross Salary</strong></td>
-                        <td id="grossSalary">₹0</td>
+                        <td id="grossSalary">₹0.00</td>
                     </tr>
                     <tr>
                         <td>PF Deduction (12% of Basic)</td>
-                        <td id="pfDeduction" class="text-danger">-₹0</td>
+                        <td id="pfDeduction" class="text-danger">-₹0.00</td>
                     </tr>
                     <tr>
                         <td>ESI Deduction (0.75% if Gross ≤ ₹21,000)</td>
-                        <td id="esiDeduction" class="text-danger">-₹0</td>
+                        <td id="esiDeduction" class="text-danger">-₹0.00</td>
                     </tr>
                     <tr class="total">
                         <td><strong>Net Take-Home Pay</strong></td>
-                        <td id="netSalary" class="text-success">₹0</td>
+                        <td id="netSalary" class="text-success">₹0.00</td>
                     </tr>
                 </table>
             </div>
